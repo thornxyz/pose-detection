@@ -10,11 +10,43 @@ let isRecording = false;
 let recordedAngle = null;
 let goodPostureAngle = null;
 let soundDelayTimer = null;
+var blink_counter = 0;
+const blink_threshold = 4;
+
+const poseLandmarksDiv = document.querySelector('.hehe');
+poseLandmarksDiv.innerText = `Blink count: ${blink_counter}`;
+
+let lastBlinkTime = 0;
+const blinkInterval = 500;
+
+function detectBlink(facemarks) {
+    const currentTime = new Date().getTime();
+    let updatedText = '';
+
+    if (currentTime - lastBlinkTime >= blinkInterval) {
+        const ratio = calculateBlinkRatio(facemarks);
+
+        if (ratio > blink_threshold) {
+            blink_counter += 1;
+            updatedText = `Blink Count: ${blink_counter}`;
+            lastBlinkTime = currentTime; // Update the last blink timestamp
+        }
+    }
+
+    // Update the poseLandmarksDiv with the updated text
+    poseLandmarksDiv.innerText = updatedText;
+}
+
+
 
 function onResults(results) {
     if (!results.poseLandmarks) {
         return;
     }
+
+
+    const facemarks = results.faceLandmarks;
+    detectBlink(facemarks);
 
     canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
@@ -22,7 +54,7 @@ function onResults(results) {
     canvasCtx.fillStyle = '#00FF00';
     canvasCtx.fillRect(0, 0, canvasElement.width, canvasElement.height);
 
-
+    // Only overwrite missing pixels.
     canvasCtx.globalCompositeOperation = 'destination-atop';
     canvasCtx.drawImage(
         results.image, 0, 0, canvasElement.width, canvasElement.height);
@@ -47,17 +79,18 @@ function onResults(results) {
     poseLandmarksDiv.innerHTML = `Angle: ${normalizedAngle.toFixed(2)} degrees`;
 
     if (isRecording) {
-        recordedAngle = normalizedAngle;
+        recordedAngle = normalizedAngle; // Record the angle during recording mode
         feedbackDiv.textContent = 'Recording...';
-    } else if (recordedAngle !== null) {
-        if (Math.abs(normalizedAngle - recordedAngle) > 8) {
+    } else if (recordedAngle !== null) { // Check if angle has been recorded
+        if (Math.abs(normalizedAngle - recordedAngle) > 10) {
             const currentTime = new Date().getTime();
-            const postureDuration = (currentTime - lastBadPostureTime) / 1000;
+            const postureDuration = (currentTime - lastBadPostureTime) / 1000; // Convert to seconds
 
             if (postureDuration >= 3 && !soundDelayTimer) {
                 soundDelayTimer = setTimeout(() => {
                     feedbackDiv.textContent = 'BAD';
                     playAlertSound();
+                    soundDelayTimer = null;
                 }, 3000);
             } else {
                 feedbackDiv.textContent = 'BAD';
@@ -72,26 +105,63 @@ function onResults(results) {
     }
 }
 
-const pose = new Pose({
+function calculateBlinkRatio(facemarks) {
+    let rh_right = facemarks[236];
+    let rh_left = facemarks[362];
+    let rv_top = facemarks[386];
+    let rv_bottom = facemarks[374];
+
+    let lh_right = facemarks[133];
+    let lh_left = facemarks[33];
+    let lv_top = facemarks[159];
+    let lv_bottom = facemarks[145];
+
+    const rhDistance = euclideanDistance(rh_right, rh_left);
+    const rvDistance = euclideanDistance(rv_top, rv_bottom);
+    const lvDistance = euclideanDistance(lv_top, lv_bottom);
+    const lhDistance = euclideanDistance(lh_right, lh_left);
+
+    const reRatio = rhDistance / rvDistance;
+    const leRatio = lhDistance / lvDistance;
+    const ratio = (reRatio + leRatio) / 2;
+    return ratio;
+}
+
+function euclideanDistance(point, point1) {
+    const distance = Math.sqrt((point1.x - point.x) ** 2 + (point1.y - point.y) ** 2);
+    return distance;
+}
+
+function detectBlink(facemarks) {
+    const ratio = calculateBlinkRatio(facemarks);
+
+    if (ratio > blink_threshold) {
+        blink_counter += 1;
+        poseLandmarksDiv.innerText = blink_counter;
+    }
+}
+
+const holistic = new Holistic({
     locateFile: (file) => {
-        return `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.2/${file}`;
+        return `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`;
     }
 });
 
-pose.setOptions({
+holistic.setOptions({
     modelComplexity: 1,
     smoothLandmarks: true,
     enableSegmentation: true,
     smoothSegmentation: true,
+    refineFaceLandmarks: true,
     minDetectionConfidence: 0.5,
     minTrackingConfidence: 0.5
 });
 
-pose.onResults(onResults);
+holistic.onResults(onResults);
 
 const camera = new Camera(videoElement, {
     onFrame: async () => {
-        await pose.send({ image: videoElement });
+        await holistic.send({ image: videoElement });
     },
     width: 640,
     height: 480
@@ -119,6 +189,9 @@ function playAlertSound() {
     }
 }
 
+setTimeout(function () {
+    document.querySelector('.loading-box').style.display = 'none';
+}, 2000);
 
 function changeBackgroundColor() {
     const feedbackElement = document.querySelector('.feedback');
