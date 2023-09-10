@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils_3d/control_utils_3d.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils_3d/control_utils_3d.js"
+    crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.2/pose.js" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
   <link rel="stylesheet" href="styles.css">
   <link href="https://fonts.cdnfonts.com/css/inter" rel="stylesheet">
+  <script src="script.js"></script>
   <title>Posture Detector</title>
 </head>
 
@@ -21,138 +24,17 @@
     <div class="canvas-container">
       <canvas class="output_canvas" width="640px" height="480px" style="border-radius: 16px;"></canvas>
       <div class="right">
-      <div class="button">
-        <button class="record" onclick="recordAngle()">Record Angle</button>
+        <div class="button">
+          <button class="record" onclick="recordAngle()">Record Angle</button>
+        </div>
+        <br>
+        <div class="feed">
+          <div class="feedback" style="margin-bottom: 6px;"></div>
+          <div class="pose-landmarks"></div>
+        </div>
       </div>
-      <br>
-      <div class="feed">
-        <div class="feedback" style="margin-bottom: 6px;"></div>
-        <div class="pose-landmarks"></div>
     </div>
-    </div>
-  </div>
 
-  <script>
-    const videoElement = document.getElementsByClassName('input_video')[0];
-    const canvasElement = document.getElementsByClassName('output_canvas')[0];
-    const canvasCtx = canvasElement.getContext('2d');
-    const feedbackDiv = document.querySelector('.feedback');
-    const recordButton = document.querySelector('.record');
-    let audio; // Audio object for playing the alert sound
-    let lastBadPostureTime = 0; // Timestamp of the last detected bad posture
-    let badPostureDuration = 0; // Duration of bad posture
-    let isRecording = false; // Flag to indicate angle recording mode
-    let recordedAngle = null; // Initialize as null
-    let goodPostureAngle = null; // Reference angle for good posture
-    let soundDelayTimer = null; // Timer for delaying sound playback
-
-    function onResults(results) {
-      if (!results.poseLandmarks) {
-        return;
-      }
-
-      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-
-      canvasCtx.globalCompositeOperation = 'source-in';
-      canvasCtx.fillStyle = '#00FF00';
-      canvasCtx.fillRect(0, 0, canvasElement.width, canvasElement.height);
-
-      // Only overwrite missing pixels.
-      canvasCtx.globalCompositeOperation = 'destination-atop';
-      canvasCtx.drawImage(
-          results.image, 0, 0, canvasElement.width, canvasElement.height);
-
-      canvasCtx.globalCompositeOperation = 'source-over';
-      drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#00FF00', lineWidth: 4});
-      drawLandmarks(canvasCtx, results.poseLandmarks, {color: '#FF0000', lineWidth: 2});
-
-      const landmarks = results.poseLandmarks;
-      const a = landmarks[11];
-      const b = landmarks[0];
-      const c = landmarks[12];
-      const radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
-      const angle = Math.abs((radians * 180.0) / Math.PI);
-
-      let normalizedAngle = angle;
-      if (normalizedAngle > 180.0) {
-        normalizedAngle = 360 - normalizedAngle;
-      }
-
-      const poseLandmarksDiv = document.querySelector('.pose-landmarks');
-      poseLandmarksDiv.innerHTML = `Angle: ${normalizedAngle.toFixed(2)} degrees`;
-
-      if (isRecording) {
-        recordedAngle = normalizedAngle; // Record the angle during recording mode
-        feedbackDiv.textContent = 'Recording...';
-      } else if (recordedAngle !== null) { // Check if angle has been recorded
-        if (Math.abs(normalizedAngle - recordedAngle) > 10) {
-          const currentTime = new Date().getTime();
-          const postureDuration = (currentTime - lastBadPostureTime) / 1000; // Convert to seconds
-
-          if (postureDuration >= 3 && !soundDelayTimer) {
-            soundDelayTimer = setTimeout(() => {
-              feedbackDiv.textContent = 'BAD';
-              playAlertSound(); // Play the alert sound for bad posture
-            }, 3000); // 3 seconds delay before playing the sound
-          } else {
-            feedbackDiv.textContent = 'BAD';
-          }
-        } else {
-          feedbackDiv.textContent = 'GOOD';
-          lastBadPostureTime = 0; // Reset the timestamp when good posture is detected
-          badPostureDuration = 0; // Reset bad posture duration
-          clearTimeout(soundDelayTimer); // Clear the sound delay timer
-          soundDelayTimer = null; // Reset the timer variable
-        }
-      }
-    }
-
-    const pose = new Pose({
-      locateFile: (file) => {
-        return `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.2/${file}`;
-      }
-    });
-
-    pose.setOptions({
-      modelComplexity: 1,
-      smoothLandmarks: true,
-      enableSegmentation: true,
-      smoothSegmentation: true,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5
-    });
-
-    pose.onResults(onResults);
-
-    const camera = new Camera(videoElement, {
-      onFrame: async () => {
-        await pose.send({ image: videoElement });
-      },
-      width: 640,
-      height: 480
-    });
-    camera.start();
-
-    function recordAngle() {
-      if (!isRecording) {
-        isRecording = true;
-        recordButton.textContent = 'Stop Recording';
-        feedbackDiv.textContent = 'Recording Angle...';
-      } else {
-        isRecording = false;
-        recordButton.textContent = 'Record Angle';
-        feedbackDiv.textContent = 'Recording Stopped';
-        goodPostureAngle = recordedAngle; // Save the recorded angle as the reference for good posture
-      }
-    }
-
-    function playAlertSound() {
-      // Check if audio is already playing to prevent overlapping sounds
-      if (!audio || audio.paused) {
-        audio = new Audio('sound.wav'); // Create an audio element with the sound file
-        audio.play(); // Play the alert sound
-      }
-    }
-  </script>
 </body>
+
 </html>
