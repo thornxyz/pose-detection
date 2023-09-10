@@ -17,24 +17,39 @@
 
 <body>
   <div class="container">
+    <div class="top">
+        <div class="head-text">
+            Posturexyz
+        </div>
+    </div>
     <br>
     <video class="input_video" height="0px"></video>
     <br>
     <div class="canvas-container">
-      <canvas class="output_canvas" width="640px" height="480px" style="border-radius: 16px;"></canvas>
-      <div class="right">
-        <div class="button">
-          <button class="record" onclick="recordAngle()">Record Angle</button>
+        <div class="loading-box" style="font-family: 'Inter',sans-serif;">Loading...</div>
+        <canvas class="output_canvas" width="640px" height="480px"></canvas>
+        <div class="right">
+            <div class="button">
+                <button class="record" onclick="recordAngle()">Record Angle</button>
+            </div>
+            <br>
+            <div class="feed">
+                <div class="feedback" style="margin-bottom: 6px;"></div>
+                <div class="pose-landmarks"></div>
+            </div>
         </div>
-        <br>
-        <div class="feed">
-          <div class="feedback" style="margin-bottom: 6px;"></div>
-          <div class="pose-landmarks"></div>
-        </div>
-      </div>
     </div>
+</div>
 
-    <script src="script.js"></script>
+  <script src="script.js"></script>
+
+  <script>
+    // Simulate content loading (you should replace this with your actual loading logic)
+    setTimeout(function () {
+        // Hide the loading box once content is loaded
+        document.querySelector('.loading-box').style.display = 'none';
+    }, 2000); // Adjust the delay as needed
+</script>
 
 </body>
 
