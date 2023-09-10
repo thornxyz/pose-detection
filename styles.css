@@ -1,19 +1,19 @@
-body{
+body {
     margin: 0;
     padding: 0;
     margin-top: 20px;
-    background: rgb(12,107,84);
-    background: linear-gradient(90deg, rgba(12,107,84,1) 0%, rgba(0,0,0,1) 54%, rgba(17,63,52,1) 100%);
+    background: rgb(12, 107, 84);
+    background: linear-gradient(90deg, rgba(12, 107, 84, 1) 0%, rgba(0, 0, 0, 1) 54%, rgba(17, 63, 52, 1) 100%);
 }
 
-.canvas-container{
+.canvas-container {
     display: flex;
     align-items: center;
     justify-content: space-around;
     flex-direction: row;
 }
 
-.right{
+.right {
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -21,8 +21,9 @@ body{
     align-items: center;
 }
 
-button{
-    background-color: #4CAF50; /* Green */
+button {
+    background-color: #4CAF50;
+    /* Green */
     border: none;
     color: white;
     padding: 15px 32px;
@@ -32,10 +33,10 @@ button{
     margin: 2px;
     margin-bottom: 10px;
     border-radius: 16px;
-    font-family: 'Inter',sans-serif;
+    font-family: 'Inter', sans-serif;
 }
 
-.feed{
+.feed {
     border-radius: 16px;
     width: 300px;
     height: 150px;
@@ -52,6 +53,6 @@ button{
 }
 
 
-.feedback{
+.feedback {
     font-size: 35px;
 }

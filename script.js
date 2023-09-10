@@ -3,13 +3,13 @@ const canvasElement = document.getElementsByClassName('output_canvas')[0];
 const canvasCtx = canvasElement.getContext('2d');
 const feedbackDiv = document.querySelector('.feedback');
 const recordButton = document.querySelector('.record');
-let audio; 
-let lastBadPostureTime = 0; 
-let badPostureDuration = 0; 
-let isRecording = false; 
-let recordedAngle = null; 
-let goodPostureAngle = null; 
-let soundDelayTimer = null; 
+let audio;
+let lastBadPostureTime = 0;
+let badPostureDuration = 0;
+let isRecording = false;
+let recordedAngle = null;
+let goodPostureAngle = null;
+let soundDelayTimer = null;
 
 function onResults(results) {
     if (!results.poseLandmarks) {
@@ -22,7 +22,7 @@ function onResults(results) {
     canvasCtx.fillStyle = '#00FF00';
     canvasCtx.fillRect(0, 0, canvasElement.width, canvasElement.height);
 
-    
+
     canvasCtx.globalCompositeOperation = 'destination-atop';
     canvasCtx.drawImage(
         results.image, 0, 0, canvasElement.width, canvasElement.height);
@@ -47,27 +47,27 @@ function onResults(results) {
     poseLandmarksDiv.innerHTML = `Angle: ${normalizedAngle.toFixed(2)} degrees`;
 
     if (isRecording) {
-        recordedAngle = normalizedAngle; 
+        recordedAngle = normalizedAngle;
         feedbackDiv.textContent = 'Recording...';
-    } else if (recordedAngle !== null) { 
-        if (Math.abs(normalizedAngle - recordedAngle) > 10) {
+    } else if (recordedAngle !== null) {
+        if (Math.abs(normalizedAngle - recordedAngle) > 8) {
             const currentTime = new Date().getTime();
-            const postureDuration = (currentTime - lastBadPostureTime) / 1000; 
+            const postureDuration = (currentTime - lastBadPostureTime) / 1000;
 
             if (postureDuration >= 3 && !soundDelayTimer) {
                 soundDelayTimer = setTimeout(() => {
                     feedbackDiv.textContent = 'BAD';
-                    playAlertSound(); 
-                }, 3000); 
+                    playAlertSound();
+                }, 3000);
             } else {
                 feedbackDiv.textContent = 'BAD';
             }
         } else {
             feedbackDiv.textContent = 'GOOD';
-            lastBadPostureTime = 0; 
-            badPostureDuration = 0; 
-            clearTimeout(soundDelayTimer); 
-            soundDelayTimer = null; 
+            lastBadPostureTime = 0;
+            badPostureDuration = 0;
+            clearTimeout(soundDelayTimer);
+            soundDelayTimer = null;
         }
     }
 }
@@ -107,15 +107,15 @@ function recordAngle() {
         isRecording = false;
         recordButton.textContent = 'Record Angle';
         feedbackDiv.textContent = 'Recording Stopped';
-        goodPostureAngle = recordedAngle; 
+        goodPostureAngle = recordedAngle;
     }
 }
 
 function playAlertSound() {
-   
+
     if (!audio || audio.paused) {
-        audio = new Audio('sound.wav'); 
-        audio.play(); 
+        audio = new Audio('sound.wav');
+        audio.play();
     }
 }
 
@@ -129,8 +129,8 @@ function changeBackgroundColor() {
     } else if (feedbackElement.textContent.trim().toLowerCase() === 'good') {
         feedElement.style.backgroundColor = '#008000';
     } else {
-        
-        feedElement.style.backgroundColor = '#008000'; 
+
+        feedElement.style.backgroundColor = '#008000';
     }
 }
 
